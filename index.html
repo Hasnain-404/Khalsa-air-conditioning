@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Khalsa Air Conditioning - Professional AC Service in Narela</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="shortcut icon" href="assets/logo.png" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -215,15 +216,15 @@
                     </div>
                 </div>
                 <div class="contact-form reveal">
-                    <form action="#">
+                    <form id="contact-form" name="google-sheet">
                         <div class="form-group">
-                            <input type="text" placeholder="Your Name" required>
+                            <input type="text" name="Name" placeholder="Your Name" required>
                         </div>
                         <div class="form-group">
-                            <input type="tel" placeholder="Phone Number" required>
+                            <input type="tel" name="Phone" placeholder="Phone Number" required>
                         </div>
                         <div class="form-group">
-                            <select required>
+                            <select name="Service" required>
                                 <option value="">Select Service</option>
                                 <option value="installation">AC Installation</option>
                                 <option value="repair">AC Repair</option>
@@ -233,9 +234,10 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <textarea rows="4" placeholder="How can we help?"></textarea>
+                            <textarea name="Message" rows="4" placeholder="How can we help?"></textarea>
                         </div>
-                        <button type="submit" class="btn btn-primary" style="width: 100%;">Send Message</button>
+                        <button type="submit" id="submit-btn" class="btn btn-primary" style="width: 100%;">Send Message</button>
+                        <p id="form-msg" style="display:none; text-align:center; margin-top:15px; font-weight:600; font-size: 14px;"></p>
                     </form>
                 </div>
             </div>
@@ -282,6 +284,61 @@
                 hamburger.querySelector('i').classList.remove('fa-times');
             });
         });
+
+        // Google Sheets Form Submission
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbyrLUeVcAZOOyboWnxefbAwOSnbymp67tlOU9IsKDVWm4fkWXBn_r8i4T6axqsbaPs/exec';
+        const form = document.forms['google-sheet'];
+        const submitBtn = document.getElementById('submit-btn');
+        const formMsg = document.getElementById('form-msg');
+
+        if (form) {
+            form.addEventListener('submit', e => {
+                e.preventDefault();
+                submitBtn.textContent = 'Sending...';
+                submitBtn.disabled = true;
+                
+                // Debugging: Log the form data being sent
+                const formData = new FormData(form);
+                console.log('--- Form Data Submitted ---');
+                for (let [key, value] of formData.entries()) {
+                    console.log(key + ':', value);
+                }
+                console.log('--- End Form Data ---');
+                
+                fetch(scriptURL, { method: 'POST', body: formData})
+                    .then(response => {
+                        console.log('Raw fetch response:', response);
+                        return response.json(); // Wait for the JSON response
+                    })
+                    .then(data => {
+                        console.log('Parsed JSON from Apps Script:', data);
+                        
+                        if (data.result === 'success') {
+                            formMsg.textContent = 'Message sent successfully! We will contact you soon.';
+                            formMsg.style.color = '#10b981'; // Green color
+                            form.reset();
+                        } else {
+                            console.error('Google Apps Script returned an error:', data.error);
+                            formMsg.textContent = 'Error processing message. See console.';
+                            formMsg.style.color = '#ef4444'; // Red color
+                        }
+                        
+                        formMsg.style.display = 'block';
+                        submitBtn.textContent = 'Send Message';
+                        submitBtn.disabled = false;
+                        setTimeout(() => { formMsg.style.display = 'none'; }, 5000);
+                    })
+                    .catch(error => {
+                        console.error('Fetch/Network Error!', error);
+                        formMsg.textContent = 'Error connecting to script. Check console.';
+                        formMsg.style.color = '#ef4444'; // Red color
+                        formMsg.style.display = 'block';
+                        submitBtn.textContent = 'Send Message';
+                        submitBtn.disabled = false;
+                        setTimeout(() => { formMsg.style.display = 'none'; }, 5000);
+                    });
+            });
+        }
     </script>
 </body>
 </html>
